@@ -1,0 +1,9 @@
+{
+	"name": "adf-testing-cb01",
+	"location": "brazilsouth",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "b2e45820-05ef-43ef-a413-51668451e228",
+		"tenantId": "604c1504-c6a3-4080-81aa-b33091104187"
+	}
+}
