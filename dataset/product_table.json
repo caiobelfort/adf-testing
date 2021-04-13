@@ -1,5 +1,5 @@
 {
-	"name": "AzureSqlDatabaseDataSource1",
+	"name": "product_table",
 	"properties": {
 		"description": "Connection to your source data store.",
 		"linkedServiceName": {
