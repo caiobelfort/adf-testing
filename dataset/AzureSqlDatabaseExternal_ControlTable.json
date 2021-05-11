@@ -1,17 +1,26 @@
 {
 	"name": "AzureSqlDatabaseExternal_ControlTable",
 	"properties": {
-		"description": "External control table to store high water mark value.",
+		"description": "The external control table is used to store the partition list of data source tables.",
 		"linkedServiceName": {
-			"referenceName": "retailsimdb",
+			"referenceName": "bidb_linked_service",
 			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"TableName": {
+				"type": "String"
+			}
 		},
 		"annotations": [],
 		"type": "AzureSqlTable",
 		"schema": [],
 		"typeProperties": {
 			"schema": "dbo",
-			"table": "watermarktable"
+			"table": {
+				"value": "@dataset().TableName",
+				"type": "Expression"
+			}
 		}
-	}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
 }

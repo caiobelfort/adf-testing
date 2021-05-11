@@ -1,7 +1,6 @@
 {
-	"name": "AzureSqlDatabaseDataSource",
+	"name": "gmcore_bi_ds",
 	"properties": {
-		"description": "Connection to your data source store.",
 		"linkedServiceName": {
 			"referenceName": "bidb_linked_service",
 			"type": "LinkedServiceReference"
@@ -11,7 +10,7 @@
 		"schema": [],
 		"typeProperties": {
 			"schema": "dbo",
-			"table": ""
+			"table": "BI15A_MOVIMENTO"
 		}
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"

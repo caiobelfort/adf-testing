@@ -1,17 +1,22 @@
 {
-	"name": "AzureSqlDatabaseDataSource",
+	"name": "watermark_ds",
 	"properties": {
-		"description": "Connection to your data source store.",
 		"linkedServiceName": {
 			"referenceName": "bidb_linked_service",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],
 		"type": "AzureSqlTable",
-		"schema": [],
+		"schema": [
+			{
+				"name": "last_rowversion",
+				"type": "bigint",
+				"precision": 19
+			}
+		],
 		"typeProperties": {
 			"schema": "dbo",
-			"table": ""
+			"table": "rowversion_lookup"
 		}
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
