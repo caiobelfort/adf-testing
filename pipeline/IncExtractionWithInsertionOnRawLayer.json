@@ -22,7 +22,7 @@
 							"process_name": {
 								"type": "String",
 								"value": {
-									"value": "@pipeline().parameters.process_name",
+									"value": "@pipeline().parameters.src_table_name",
 									"type": "Expression"
 								}
 							}
@@ -51,7 +51,10 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
-						"sqlReaderQuery": "SELECT max(cast(bi15a_rowversion as bigint)) as new_watermark\nFROM bi.dbo.bi15a_movimento (NOLOCK)",
+						"sqlReaderQuery": {
+							"value": "SELECT max(cast(@{pipeline().parameters.src_rowversion_col} as bigint)) as new_watermark\nFROM @{pipeline().parameters.src_table_name} (NOLOCK)",
+							"type": "Expression"
+						},
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
@@ -90,7 +93,7 @@
 					"source": {
 						"type": "AzureSqlSource",
 						"sqlReaderQuery": {
-							"value": "SELECT distinct bi15a_dt\nFROM bi.dbo.bi15a_movimento (NOLOCK)\nWHERE cast(bi15a_rowversion as bigint) > @{activity('LAST_WATERMARK').output.firstRow.last_watermark} \nAND cast(bi15a_rowversion as bigint) <= @{activity('NEW_WATERMARK').output.firstRow.new_watermark};",
+							"value": "SELECT distinct @pipeline.parameters.src_partition_column as part\nFROM @pipeline().parameters.src_table_name (NOLOCK)\nWHERE cast(@pipeline().parameters.src_rowversion_col as bigint) > @{activity('LAST_WATERMARK').output.firstRow.last_watermark} \nAND cast(@pipeline().parameters.src_rowversion_col as bigint) <= @{activity('NEW_WATERMARK').output.firstRow.new_watermark};",
 							"type": "Expression"
 						},
 						"queryTimeout": "02:00:00",
@@ -104,7 +107,7 @@
 				}
 			},
 			{
-				"name": "ForEach1",
+				"name": "Extract Partitions",
 				"type": "ForEach",
 				"dependsOn": [
 					{
@@ -123,7 +126,7 @@
 					"batchCount": 4,
 					"activities": [
 						{
-							"name": "Copy data1",
+							"name": "Transfer Data To Staging",
 							"type": "Copy",
 							"dependsOn": [],
 							"policy": {
@@ -138,7 +141,7 @@
 								"source": {
 									"type": "AzureSqlSource",
 									"sqlReaderQuery": {
-										"value": "SELECT TOP 10 BI15A_ID,\n              BI15A_ID_ORIGEM,\n              BI15A_ID_FILIAL,\n              BI15A_DT,\n              BI15A_ID_TIPO_MOVIMENTO,\n              BI15A_ID_CATEGORIA,\n              BI15A_ID_FORNECEDOR,\n              BI15A_ID_CLIENTE,\n              BI15A_ID_VENDEDOR,\n              BI15A_VALOR_TOTAL,\n              BI15A_VALOR_BONIFICACAO,\n              BI15A_VALOR_ICMS,\n              BI15A_VALOR_ICMS_ST,\n              BI15A_VALOR_CUSTO_MEDIO,\n              BI15A_VALOR_CUSTO_FINAL,\n              BI15A_VALOR_ACRESCIMO,\n              BI15A_VALOR_DESCONTO_FISCAL,\n              BI15A_VALOR_DESCONTO,\n              BI15A_VALOR_JUROS,\n              BI15A_VALOR_TOTAL_ST,\n              CAST(BI15A_ROWVERSION AS BIGINT) AS BI15A_ROWVERSION,\n              GETUTCDATE()                     AS __dtts_extracao\nFROM bi.dbo.bi15a_movimento\nWHERE CAST(BI15A_ROWVERSION AS BIGINT) > @{activity('LAST_WATERMARK').output.firstRow.last_watermark}\nAND CAST(BI15A_ROWVERSION AS BIGINT) <= @{activity('NEW_WATERMARK').output.firstRow.new_watermark}\nAND BI15A_DT = '@{item().bi15a_dt}'",
+										"value": "SELECT   @pipeline().parameters.src_cols\nFROM @pipeline().parameters.src_table_name\nWHERE CAST(@pipeline().parameters.src_rowversion_col AS BIGINT) > @{activity('LAST_WATERMARK').output.firstRow.last_watermark}\nAND CAST(@pipeline().parameters.src_rowversion_col AS BIGINT) <= @{activity('NEW_WATERMARK').output.firstRow.new_watermark}\nAND pipeline().parameters.src_partition_column = '@{item().part}'",
 										"type": "Expression"
 									},
 									"queryTimeout": "02:00:00",
@@ -181,11 +184,11 @@
 				}
 			},
 			{
-				"name": "Notebook1",
+				"name": "Insert Into Delta Table",
 				"type": "DatabricksNotebook",
 				"dependsOn": [
 					{
-						"activity": "ForEach1",
+						"activity": "Extract Partitions",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -206,13 +209,19 @@
 							"value": "/mnt/staging/@{pipeline().runId}",
 							"type": "Expression"
 						},
-						"output-path": "/mnt/raw/adf/bi15a_movimento",
+						"output-path": {
+							"value": "@pipeline().parameters.out_table_name",
+							"type": "Expression"
+						},
 						"run-id": {
 							"value": "@pipeline().RunId",
 							"type": "Expression"
 						},
 						"input-format": "parquet",
-						"partition-by": "bi15a_dt"
+						"partition-by": {
+							"value": "@pipeline().parameters.output_partition_column",
+							"type": "Expression"
+						}
 					}
 				},
 				"linkedServiceName": {
@@ -221,11 +230,11 @@
 				}
 			},
 			{
-				"name": "Stored procedure1",
+				"name": "Update Watermark",
 				"type": "SqlServerStoredProcedure",
 				"dependsOn": [
 					{
-						"activity": "Notebook1",
+						"activity": "Insert Into Delta Table",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -244,7 +253,7 @@
 					"storedProcedureParameters": {
 						"process_name": {
 							"value": {
-								"value": "@pipeline().parameters.process_name",
+								"value": "@pipeline().parameters.src_table_name",
 								"type": "Expression"
 							},
 							"type": "String"
@@ -266,6 +275,24 @@
 		],
 		"parameters": {
 			"process_name": {
+				"type": "string"
+			},
+			"src_rowversion_col": {
+				"type": "string"
+			},
+			"src_table_name": {
+				"type": "string"
+			},
+			"out_table_name": {
+				"type": "string"
+			},
+			"src_partition_column": {
+				"type": "string"
+			},
+			"src_cols": {
+				"type": "string"
+			},
+			"output_partition_column": {
 				"type": "string"
 			}
 		},
