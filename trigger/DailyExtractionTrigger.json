@@ -3,7 +3,23 @@
 	"properties": {
 		"annotations": [],
 		"runtimeState": "Started",
-		"pipelines": [],
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "BI15A_MOVIMENTO",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"process_name": "bi15a_movimento",
+					"src_rowversion_col": "bi15a_rowversion",
+					"src_table_name": "bi.dbo.bi15a_movimento",
+					"out_table_name": "/mnt/raw/rdbms/mssql/gmcore/bi/dbo/bi15a_movimento",
+					"src_partition_column": "bi15a_id_filial",
+					"src_cols": "bi15a_id, bi15a_id_origem, bi15a_id_filial, bi15a_dt, bi15a_id_tipo_movimento, bi15a_id_categoria, bi15a_id_fornecedor, bi15a_id_cliente, bi15a_id_vendedor, bi15a_valor_total, bi15a_valor_bonificacao, bi15a_valor_icms, bi15a_valor_icms_st, bi15a_valor_custo_medio, bi15a_valor_custo_final, bi15a_valor_acrescimo, bi15a_valor_desconto_fiscal, bi15a_valor_desconto, bi15a_valor_juros, bi15a_valor_total_st, cast(bi15a_rowversion AS bigint) AS bi15a_rowversion, getutcdate() AS __dtts_extracao",
+					"output_partition_column": "bi15a_id_filial"
+				}
+			}
+		],
 		"type": "ScheduleTrigger",
 		"typeProperties": {
 			"recurrence": {
